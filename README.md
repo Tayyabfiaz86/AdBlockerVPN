@@ -139,8 +139,9 @@ This project is for educational purposes. Use responsibly and in accordance with
 
 ## Contributing
 
-Feel free to submit issues and enhancement requests!
+Rree to submit issues and enhancement requests!
 
 ---
+
 
 **Note**: This app is for educational purposes. Always respect website terms of service and local regulations. 
