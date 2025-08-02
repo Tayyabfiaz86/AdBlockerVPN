@@ -11,7 +11,7 @@ A VPN-based ad blocker app for Android that uses the VpnService API to intercept
 - **Background Service**: Runs in foreground with persistent notification
 
 ## Prerequisites
-
+ 
 - Android Studio or Cursor
 - Android SDK (API 21+)
 - Java JDK 8 or higher
@@ -145,4 +145,5 @@ Feel free to submit issues and enhancement requests!
 
 
 **Note**: This app is for educational purposes. Always respect website terms of service and local regulations. 
+
 
