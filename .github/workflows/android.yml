@@ -19,12 +19,14 @@ jobs:
         distribution: 'temurin'
 
     - name: Setup Gradle
-      uses: gradle/gradle-build-action@v2
-      with:
-        gradle-version: '7.5'
+      run: |
+        chmod +x gradlew
+        ./gradlew wrapper --gradle-version 7.5
 
     - name: Build with Gradle
-      run: gradle assembleDebug
+      run: |
+        ./gradlew clean
+        ./gradlew assembleDebug --stacktrace --info
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
@@ -43,10 +45,10 @@ jobs:
           ## 🚀 Ad Blocker VPN v1.1.0
           
           ### ✅ Fixed Issues:
-          - **Internet connectivity** - VPN now properly forwards legitimate traffic
-          - **Auto-disconnect** - VPN service stability improved
-          - **Ads counter** - Real-time ads blocked counter now working
-          - **Better ad detection** - Enhanced domain blocking list
+          - **VPN Startup Issues** - Fixed VPN interface establishment
+          - **Status Display** - Now shows correct VPN connection status
+          - **Error Handling** - Proper error messages and recovery
+          - **Service Stability** - Improved VPN service lifecycle
           
           ### 🔧 New Features:
           - **Test Connection** button to verify VPN functionality
@@ -80,10 +82,10 @@ jobs:
           - **Min SDK**: API 21 (Android 5.0+)
           
           ### 🐛 Bug Fixes:
-          - Fixed VPN service auto-disconnect issue
-          - Improved packet forwarding for legitimate traffic
-          - Enhanced DNS packet parsing for better ad detection
-          - Added proper error handling and recovery
+          - Fixed VPN service startup and interface establishment
+          - Improved status validation and UI updates
+          - Enhanced error handling with proper user feedback
+          - Added delayed success message to ensure VPN actually starts
           
           ---
           
