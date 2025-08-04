@@ -96,12 +96,27 @@ class MainActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         
         if (requestCode == VPN_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
-            val intent = Intent(this, AdBlockerVpnService::class.java).apply {
-                action = "START_VPN"
+            try {
+                val intent = Intent(this, AdBlockerVpnService::class.java).apply {
+                    action = "START_VPN"
+                }
+                startService(intent)
+                
+                // Wait a bit for VPN to actually start
+                lifecycleScope.launch {
+                    delay(1000) // Wait 1 second
+                    updateUI()
+                    
+                    if (AdBlockerVpnService.isRunning) {
+                        Toast.makeText(this@MainActivity, "VPN started successfully!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(this@MainActivity, "VPN failed to start. Please try again.", Toast.LENGTH_LONG).show()
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error starting VPN", e)
+                Toast.makeText(this, "VPN failed to start: ${e.message}", Toast.LENGTH_LONG).show()
             }
-            startService(intent)
-            updateUI()
-            Toast.makeText(this, "VPN started successfully!", Toast.LENGTH_SHORT).show()
         } else {
             Toast.makeText(this, "VPN permission denied", Toast.LENGTH_SHORT).show()
         }

@@ -103,9 +103,14 @@ class AdBlockerVpnService : VpnService() {
                 startForeground(NOTIFICATION_ID, createNotification())
                 startTunnel()
                 Log.d(TAG, "VPN started successfully")
+            } else {
+                Log.e(TAG, "Failed to establish VPN interface")
+                throw Exception("VPN interface could not be established")
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start VPN", e)
+            isRunning = false
+            throw e
         }
     }
     
@@ -128,6 +133,8 @@ class AdBlockerVpnService : VpnService() {
                 
                 val buffer = ByteArray(32767)
                 
+                Log.d(TAG, "Tunnel started, processing packets...")
+                
                 while (isRunning) {
                     try {
                         val length = inputStream.read(buffer)
@@ -136,12 +143,17 @@ class AdBlockerVpnService : VpnService() {
                             if (isAdDomain(buffer, length)) {
                                 adsBlocked++
                                 Log.d(TAG, "Ad blocked! Total: $adsBlocked")
+                                // Don't forward ad traffic
                                 continue
                             }
                             
                             // Forward legitimate traffic
                             outputStream.write(buffer, 0, length)
                             outputStream.flush()
+                        } else if (length == -1) {
+                            // End of stream
+                            Log.d(TAG, "End of VPN stream")
+                            break
                         }
                     } catch (e: IOException) {
                         if (isRunning) {
@@ -150,8 +162,17 @@ class AdBlockerVpnService : VpnService() {
                         }
                     }
                 }
+                
+                Log.d(TAG, "Tunnel stopped")
             } catch (e: Exception) {
                 Log.e(TAG, "Error in tunnel", e)
+            } finally {
+                try {
+                    inputStream?.close()
+                    outputStream?.close()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error closing streams", e)
+                }
             }
         }
     }
