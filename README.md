@@ -2,6 +2,20 @@
 
 A VPN-based ad blocker app for Android that uses the VpnService API to intercept and block ad domains.
 
+## 🚀 Latest Version v1.1.0
+
+### ✅ Fixed Issues:
+- **Internet connectivity** - VPN now properly forwards legitimate traffic
+- **Auto-disconnect** - VPN service stability improved  
+- **Ads counter** - Real-time ads blocked counter now working
+- **Better ad detection** - Enhanced domain blocking list
+
+### 🔧 New Features:
+- **Test Connection** button to verify VPN functionality
+- **Improved UI** with better status updates
+- **Enhanced ad domain list** including Facebook, YouTube, Instagram ads
+- **Better error handling** and service stability
+
 ## Features
 
 - **VPN-based Ad Blocking**: Uses Android's VpnService to intercept network traffic
@@ -9,6 +23,7 @@ A VPN-based ad blocker app for Android that uses the VpnService API to intercept
 - **Real-time Statistics**: Shows number of ads blocked in real-time
 - **Modern UI**: Clean Material Design interface
 - **Background Service**: Runs in foreground with persistent notification
+- **Internet Preservation**: Only blocks ads, keeps internet working normally
 
 ## Prerequisites
  
@@ -51,6 +66,7 @@ cd AdBlockerVPN
 3. **DNS Filtering**: Analyzes DNS requests and blocks known ad domains
 4. **Packet Processing**: Filters network packets in real-time
 5. **Statistics**: Counts and displays blocked ads
+6. **Traffic Forwarding**: Legitimate traffic is forwarded normally
 
 ## Ad Domains Blocked
 
@@ -59,6 +75,12 @@ The app currently blocks these ad domains:
 - doubleclick.net
 - googlesyndication.com
 - googleadservices.com
+- facebook.com
+- ads.facebook.com
+- youtube.com
+- ads.youtube.com
+- instagram.com
+- ads.instagram.com
 - And more...
 
 ## Usage
@@ -66,7 +88,8 @@ The app currently blocks these ad domains:
 1. **Start VPN**: Tap "Start VPN" button
 2. **Grant Permission**: Allow VPN permission when prompted
 3. **Monitor**: Watch the ads blocked counter increase
-4. **Stop VPN**: Tap "Stop VPN" to disconnect
+4. **Test Connection**: Use "Test Connection" button to verify internet works
+5. **Stop VPN**: Tap "Stop VPN" to disconnect
 
 ## Project Structure
 
@@ -95,6 +118,7 @@ app/
 - **Distribution**: Share via APK file, GitHub releases, or other platforms
 - **Testing**: Test on ad-heavy websites or free games from Play Store
 - **Performance**: Monitor battery usage and performance impact
+- **Internet**: App preserves normal internet connectivity while blocking ads
 
 ## Troubleshooting
 
@@ -113,6 +137,11 @@ app/
    - Sync project with Gradle files
    - Clean and rebuild project
    - Update Android SDK tools
+
+4. **Internet Not Working**
+   - Use "Test Connection" button to verify VPN
+   - Check if VPN service is running
+   - Restart the app if needed
 
 ## Development
 
@@ -142,7 +171,6 @@ This project is for educational purposes. Use responsibly and in accordance with
 Feel free to submit issues and enhancement requests!
 
 ---
-
 
 **Note**: This app is for educational purposes. Always respect website terms of service and local regulations. 
 

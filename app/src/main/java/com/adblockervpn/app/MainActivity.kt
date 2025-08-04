@@ -12,6 +12,7 @@ import com.adblockervpn.app.databinding.ActivityMainBinding
 import com.adblockervpn.app.vpn.AdBlockerVpnService
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.net.URL
 
 class MainActivity : AppCompatActivity() {
     
@@ -41,8 +42,8 @@ class MainActivity : AppCompatActivity() {
         }
         
         binding.settingsButton.setOnClickListener {
-            // TODO: Implement settings activity
-            Toast.makeText(this, "Settings coming soon!", Toast.LENGTH_SHORT).show()
+            // Test VPN functionality
+            testVpnConnection()
         }
         
         updateUI()
@@ -63,6 +64,32 @@ class MainActivity : AppCompatActivity() {
         }
         startService(intent)
         updateUI()
+        Toast.makeText(this, "VPN stopped", Toast.LENGTH_SHORT).show()
+    }
+    
+    private fun testVpnConnection() {
+        if (!AdBlockerVpnService.isRunning) {
+            Toast.makeText(this, "Please start VPN first", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
+        lifecycleScope.launch {
+            try {
+                // Test internet connectivity
+                val url = URL("https://www.google.com")
+                val connection = url.openConnection()
+                connection.connectTimeout = 5000
+                connection.readTimeout = 5000
+                connection.connect()
+                
+                Toast.makeText(this@MainActivity, "Internet working! VPN is active.", Toast.LENGTH_LONG).show()
+                Log.d(TAG, "VPN connection test successful")
+                
+            } catch (e: Exception) {
+                Toast.makeText(this@MainActivity, "Internet connection failed. Check VPN settings.", Toast.LENGTH_LONG).show()
+                Log.e(TAG, "VPN connection test failed", e)
+            }
+        }
     }
     
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -74,30 +101,46 @@ class MainActivity : AppCompatActivity() {
             }
             startService(intent)
             updateUI()
+            Toast.makeText(this, "VPN started successfully!", Toast.LENGTH_SHORT).show()
         } else {
             Toast.makeText(this, "VPN permission denied", Toast.LENGTH_SHORT).show()
         }
     }
     
     private fun updateUI() {
-        if (AdBlockerVpnService.isRunning) {
-            binding.toggleButton.text = getString(R.string.stop_vpn)
-            binding.statusText.text = getString(R.string.vpn_connected)
-            binding.statusText.setTextColor(getColor(R.color.connected))
-        } else {
-            binding.toggleButton.text = getString(R.string.start_vpn)
-            binding.statusText.text = getString(R.string.vpn_disconnected)
-            binding.statusText.setTextColor(getColor(R.color.disconnected))
+        try {
+            if (AdBlockerVpnService.isRunning) {
+                binding.toggleButton.text = getString(R.string.stop_vpn)
+                binding.statusText.text = getString(R.string.vpn_connected)
+                binding.statusText.setTextColor(getColor(R.color.connected))
+                Log.d(TAG, "VPN is running")
+            } else {
+                binding.toggleButton.text = getString(R.string.start_vpn)
+                binding.statusText.text = getString(R.string.vpn_disconnected)
+                binding.statusText.setTextColor(getColor(R.color.disconnected))
+                Log.d(TAG, "VPN is not running")
+            }
+            
+            // Update ads blocked counter
+            val adsBlocked = AdBlockerVpnService.adsBlocked
+            binding.adsBlockedText.text = adsBlocked.toString()
+            Log.d(TAG, "Ads blocked: $adsBlocked")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error updating UI", e)
         }
-        
-        binding.adsBlockedText.text = AdBlockerVpnService.adsBlocked.toString()
     }
     
     private fun startStatusUpdate() {
         lifecycleScope.launch {
             while (true) {
-                updateUI()
-                delay(1000) // Update every second
+                try {
+                    updateUI()
+                    delay(500) // Update every 500ms for better responsiveness
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error in status update", e)
+                    delay(1000) // Longer delay on error
+                }
             }
         }
     }
@@ -105,5 +148,10 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         updateUI()
+    }
+    
+    override fun onPause() {
+        super.onPause()
+        // Keep UI updates running in background
     }
 } 

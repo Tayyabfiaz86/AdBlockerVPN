@@ -19,6 +19,12 @@ import java.nio.ByteBuffer
 import java.nio.channels.DatagramChannel
 import java.nio.channels.SocketChannel
 import kotlinx.coroutines.*
+import java.net.InetAddress
+import java.net.Socket
+import java.io.IOException
+import java.net.ServerSocket
+import java.io.InputStream
+import java.io.OutputStream
 
 class AdBlockerVpnService : VpnService() {
     
@@ -36,6 +42,7 @@ class AdBlockerVpnService : VpnService() {
     
     private var vpnInterface: ParcelFileDescriptor? = null
     private var serviceJob: Job? = null
+    private var tunnelJob: Job? = null
     
     // Ad domain blocklist
     private val adDomains = setOf(
@@ -48,7 +55,23 @@ class AdBlockerVpnService : VpnService() {
         "pagead2.googlesyndication.com",
         "static.doubleclick.net",
         "www.googleadservices.com",
-        "adclick.g.doubleclick.net"
+        "adclick.g.doubleclick.net",
+        "googleads.g.doubleclick.net",
+        "www.googletagmanager.com",
+        "googletagmanager.com",
+        "www.google-analytics.com",
+        "google-analytics.com",
+        "ssl.google-analytics.com",
+        "www.facebook.com",
+        "facebook.com",
+        "ads.facebook.com",
+        "an.facebook.com",
+        "www.youtube.com",
+        "youtube.com",
+        "ads.youtube.com",
+        "www.instagram.com",
+        "instagram.com",
+        "ads.instagram.com"
     )
     
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -63,19 +86,22 @@ class AdBlockerVpnService : VpnService() {
         if (isRunning) return
         
         try {
-            // Create VPN interface
+            // Create VPN interface with proper configuration
             val builder = Builder()
                 .addAddress(VPN_ADDRESS, 32)
                 .addDnsServer(DNS_SERVER)
                 .addRoute(VPN_ROUTE, 0)
                 .setSession("AdBlockerVPN")
+                .setMtu(1500)
+                .allowFamily(4) // IPv4
+                .allowFamily(6) // IPv6
             
             vpnInterface = builder.establish()
             
             if (vpnInterface != null) {
                 isRunning = true
                 startForeground(NOTIFICATION_ID, createNotification())
-                startVpnThread()
+                startTunnel()
                 Log.d(TAG, "VPN started successfully")
             }
         } catch (e: Exception) {
@@ -86,6 +112,7 @@ class AdBlockerVpnService : VpnService() {
     private fun stopVpn() {
         isRunning = false
         serviceJob?.cancel()
+        tunnelJob?.cancel()
         vpnInterface?.close()
         vpnInterface = null
         stopForeground(true)
@@ -93,66 +120,77 @@ class AdBlockerVpnService : VpnService() {
         Log.d(TAG, "VPN stopped")
     }
     
-    private fun startVpnThread() {
-        serviceJob = CoroutineScope(Dispatchers.IO).launch {
+    private fun startTunnel() {
+        tunnelJob = CoroutineScope(Dispatchers.IO).launch {
             try {
                 val inputStream = FileInputStream(vpnInterface?.fileDescriptor)
                 val outputStream = FileOutputStream(vpnInterface?.fileDescriptor)
                 
-                val buffer = ByteBuffer.allocate(32767)
+                val buffer = ByteArray(32767)
                 
                 while (isRunning) {
-                    val length = inputStream.read(buffer.array())
-                    if (length > 0) {
-                        buffer.limit(length)
-                        
-                        // Process packet and check for ads
-                        if (isAdDomain(buffer)) {
-                            adsBlocked++
-                            Log.d(TAG, "Ad blocked! Total: $adsBlocked")
-                            continue
+                    try {
+                        val length = inputStream.read(buffer)
+                        if (length > 0) {
+                            // Process packet and check for ads
+                            if (isAdDomain(buffer, length)) {
+                                adsBlocked++
+                                Log.d(TAG, "Ad blocked! Total: $adsBlocked")
+                                continue
+                            }
+                            
+                            // Forward legitimate traffic
+                            outputStream.write(buffer, 0, length)
+                            outputStream.flush()
                         }
-                        
-                        // Forward legitimate traffic
-                        outputStream.write(buffer.array(), 0, length)
+                    } catch (e: IOException) {
+                        if (isRunning) {
+                            Log.e(TAG, "Error reading VPN data", e)
+                            delay(100) // Small delay before retry
+                        }
                     }
-                    buffer.clear()
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error in VPN thread", e)
+                Log.e(TAG, "Error in tunnel", e)
             }
         }
     }
     
-    private fun isAdDomain(packet: ByteBuffer): Boolean {
-        // Simple DNS packet parsing to check domain names
+    private fun isAdDomain(packet: ByteArray, length: Int): Boolean {
         try {
-            val data = packet.array()
-            if (data.size < 12) return false
+            if (length < 12) return false
             
-            // Check if it's a DNS query
-            if (data[2] == 0x01.toByte() && data[3] == 0x00.toByte()) {
+            // Check if it's a DNS query (port 53)
+            if (packet[2] == 0x01.toByte() && packet[3] == 0x00.toByte()) {
                 // Parse domain name from DNS packet
                 var offset = 12
                 val domain = StringBuilder()
                 
-                while (offset < data.size && data[offset] != 0x00.toByte()) {
-                    val length = data[offset].toInt() and 0xFF
+                while (offset < length && packet[offset] != 0x00.toByte()) {
+                    val labelLength = packet[offset].toInt() and 0xFF
                     offset++
                     
-                    for (i in 0 until length) {
-                        if (offset < data.size) {
-                            domain.append(data[offset].toChar())
-                            offset++
+                    if (offset + labelLength <= length) {
+                        for (i in 0 until labelLength) {
+                            domain.append(packet[offset + i].toChar())
                         }
+                        offset += labelLength
+                        domain.append('.')
                     }
-                    domain.append('.')
                 }
                 
                 val domainName = domain.toString().removeSuffix(".")
-                return adDomains.any { adDomain ->
+                Log.d(TAG, "Checking domain: $domainName")
+                
+                val isAdDomain = adDomains.any { adDomain ->
                     domainName.contains(adDomain, ignoreCase = true)
                 }
+                
+                if (isAdDomain) {
+                    Log.d(TAG, "Ad domain detected: $domainName")
+                }
+                
+                return isAdDomain
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error parsing packet", e)
@@ -175,6 +213,8 @@ class AdBlockerVpnService : VpnService() {
             .setSmallIcon(R.drawable.ic_vpn)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .build()
     }
     
@@ -184,7 +224,12 @@ class AdBlockerVpnService : VpnService() {
                 CHANNEL_ID,
                 "Ad Blocker VPN",
                 NotificationManager.IMPORTANCE_LOW
-            )
+            ).apply {
+                setShowBadge(false)
+                enableLights(false)
+                enableVibration(false)
+                setSound(null, null)
+            }
             val notificationManager = getSystemService(NotificationManager::class.java)
             notificationManager.createNotificationChannel(channel)
         }
@@ -192,6 +237,11 @@ class AdBlockerVpnService : VpnService() {
     
     override fun onDestroy() {
         super.onDestroy()
+        stopVpn()
+    }
+    
+    override fun onRevoke() {
+        super.onRevoke()
         stopVpn()
     }
 } 

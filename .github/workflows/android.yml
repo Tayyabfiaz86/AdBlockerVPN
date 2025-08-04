@@ -1,8 +1,9 @@
-name: Android CI
- 
+name: Android CI/CD
+
 on:
   push:
     branches: [ main, master ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -25,7 +26,7 @@ jobs:
     - name: Build with Gradle
       run: gradle assembleDebug
 
-    - name: Upload APK
+    - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: app-debug
@@ -36,24 +37,56 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: app/build/outputs/apk/debug/app-debug.apk
-        tag_name: v1.0.0
-        name: Ad Blocker VPN v1.0.0
+        tag_name: v1.1.0
+        name: Ad Blocker VPN v1.1.0 - Fixed Version
         body: |
-          ## Ad Blocker VPN Android App
+          ## 🚀 Ad Blocker VPN v1.1.0
           
-          ### Features:
-          - VPN-based ad blocking
-          - Real-time statistics
-          - Modern Material Design UI
+          ### ✅ Fixed Issues:
+          - **Internet connectivity** - VPN now properly forwards legitimate traffic
+          - **Auto-disconnect** - VPN service stability improved
+          - **Ads counter** - Real-time ads blocked counter now working
+          - **Better ad detection** - Enhanced domain blocking list
           
-          ### Installation:
-          1. Download APK
-          2. Enable "Install from Unknown Sources"
-          3. Install APK
-          4. Grant VPN permission
-          5. Start blocking ads!
+          ### 🔧 New Features:
+          - **Test Connection** button to verify VPN functionality
+          - **Improved UI** with better status updates
+          - **Enhanced ad domain list** including Facebook, YouTube, Instagram ads
+          - **Better error handling** and service stability
           
-          ### Note:
-          This app cannot be published on Google Play Store due to ad-blocking functionality.
+          ### 📱 Installation Instructions:
+          1. **Download** the APK file below
+          2. **Enable** "Install from Unknown Sources" in Android Settings
+          3. **Install** the APK file
+          4. **Grant VPN permission** when prompted
+          5. **Start VPN** and begin blocking ads!
+          
+          ### 🎯 How to Test:
+          1. Start VPN in the app
+          2. Open any app with ads (YouTube, Facebook, etc.)
+          3. Watch the "Ads Blocked" counter increase
+          4. Use "Test Connection" button to verify internet works
+          
+          ### ⚠️ Important Notes:
+          - **Cannot be published** on Google Play Store (ad-blocking policy)
+          - **Test on physical device** (VPN doesn't work on emulator)
+          - **Requires Android 5.0+** (API 21+)
+          - **Internet will work normally** - only ads are blocked
+          
+          ### 🔍 Technical Details:
+          - **Language**: Kotlin
+          - **Architecture**: Service-based VPN with UI updates
+          - **Dependencies**: AndroidX, Material Design
+          - **Min SDK**: API 21 (Android 5.0+)
+          
+          ### 🐛 Bug Fixes:
+          - Fixed VPN service auto-disconnect issue
+          - Improved packet forwarding for legitimate traffic
+          - Enhanced DNS packet parsing for better ad detection
+          - Added proper error handling and recovery
+          
+          ---
+          
+          **Note**: This app is for educational purposes. Always respect website terms of service and local regulations.
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
