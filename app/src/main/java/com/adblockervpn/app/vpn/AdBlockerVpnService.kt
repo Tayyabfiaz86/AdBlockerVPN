@@ -114,7 +114,7 @@ class AdBlockerVpnService : VpnService() {
                 Log.d(TAG, "VPN started successfully")
             } else {
                 Log.e(TAG, "Failed to establish VPN interface")
-                throw Exception("VPN interface could not be established")
+                isRunning = false
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start VPN", e)
@@ -143,6 +143,9 @@ class AdBlockerVpnService : VpnService() {
                 vpnInterface?.let { vpn ->
                     inputStream = FileInputStream(vpn.fileDescriptor)
                     outputStream = FileOutputStream(vpn.fileDescriptor)
+                } ?: run {
+                    Log.e(TAG, "VPN interface is null")
+                    return@launch
                 }
                 
                 val buffer = ByteArray(32767)

@@ -50,11 +50,16 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun startVpn() {
-        val intent = VpnService.prepare(this)
-        if (intent != null) {
-            startActivityForResult(intent, VPN_REQUEST_CODE)
-        } else {
-            onActivityResult(VPN_REQUEST_CODE, Activity.RESULT_OK, null)
+        try {
+            val intent = VpnService.prepare(this)
+            if (intent != null) {
+                startActivityForResult(intent, VPN_REQUEST_CODE)
+            } else {
+                onActivityResult(VPN_REQUEST_CODE, Activity.RESULT_OK, null)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error preparing VPN", e)
+            Toast.makeText(this, "VPN preparation failed", Toast.LENGTH_SHORT).show()
         }
     }
     
@@ -104,7 +109,7 @@ class MainActivity : AppCompatActivity() {
                 
                 // Wait a bit for VPN to actually start
                 lifecycleScope.launch {
-                    delay(2000) // Wait 2 seconds
+                    delay(3000) // Wait 3 seconds
                     updateUI()
                     
                     if (AdBlockerVpnService.isRunning) {
