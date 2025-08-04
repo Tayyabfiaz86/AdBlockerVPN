@@ -108,7 +108,7 @@ nonstop=false
 case "$( uname )" in                #(
   CYGWIN* )         cygwin=true  ;; #(
   Darwin* )         darwin=true  ;; #(
-  MSYS* | MINGW* )  msys=true    ;; #(
+  MSYS* | MINGW* )  msys=true   ;; #(
   NONSTOP* )        nonstop=true ;;
 esac
 
@@ -190,6 +190,7 @@ if "$cygwin" || "$msys" ; then
         set -- "$@" "$arg"     # push replacement arg
     done
 fi
+
 
 # Collect all arguments for the java command;
 #   * $DEFAULT_JVM_OPTS, $JAVA_OPTS, and $GRADLE_OPTS can contain fragments of

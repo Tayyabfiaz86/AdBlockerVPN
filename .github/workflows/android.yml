@@ -20,34 +20,13 @@ jobs:
 
     - name: Setup Gradle
       run: |
-        ls -la
-        echo "Current directory: $(pwd)"
-        echo "Checking gradlew file..."
-        file gradlew
-        head -5 gradlew
         chmod +x gradlew
-        ls -la gradlew
-        if ./gradlew --version; then
-          echo "Gradle wrapper works!"
-        else
-          echo "Gradle wrapper failed, using gradle command..."
-          gradle --version
-        fi
+        ./gradlew --version
 
     - name: Build with Gradle
       run: |
-        echo "=== Build Environment ==="
-        java -version
-        echo "=== Gradle Version ==="
-        if ./gradlew --version; then
-          echo "=== Starting Build ==="
-          ./gradlew clean
-          ./gradlew assembleDebug --stacktrace --info --warning-mode all
-        else
-          echo "=== Using Gradle Command ==="
-          gradle clean
-          gradle assembleDebug --stacktrace --info --warning-mode all
-        fi
+        ./gradlew clean
+        ./gradlew assembleDebug --stacktrace --info
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
