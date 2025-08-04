@@ -19,14 +19,12 @@ jobs:
         distribution: 'temurin'
 
     - name: Setup Gradle
-      run: |
-        chmod +x gradlew
-        ./gradlew --version
+      uses: gradle/gradle-build-action@v2
+      with:
+        gradle-version: '7.5'
 
     - name: Build with Gradle
-      run: |
-        ./gradlew clean
-        ./gradlew assembleDebug --stacktrace --info
+      run: gradle assembleDebug
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
