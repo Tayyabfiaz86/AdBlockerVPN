@@ -14,17 +14,21 @@ import com.adblockervpn.app.MainActivity
 import com.adblockervpn.app.R
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.io.IOException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.net.InetSocketAddress
 import java.nio.ByteBuffer
 import java.nio.channels.DatagramChannel
 import java.nio.channels.SocketChannel
-import kotlinx.coroutines.*
 import java.net.InetAddress
 import java.net.Socket
-import java.io.IOException
-import java.net.ServerSocket
 import java.io.InputStream
 import java.io.OutputStream
+import java.net.ServerSocket
 
 class AdBlockerVpnService : VpnService() {
     
