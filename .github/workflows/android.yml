@@ -20,8 +20,13 @@ jobs:
 
     - name: Setup Gradle
       run: |
+        ls -la
+        if [ ! -f "gradlew" ]; then
+          echo "Gradle wrapper not found, regenerating..."
+          gradle wrapper --gradle-version 7.5
+        fi
         chmod +x gradlew
-        ./gradlew wrapper --gradle-version 7.5
+        ./gradlew --version
 
     - name: Build with Gradle
       run: |
