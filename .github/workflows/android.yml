@@ -36,12 +36,26 @@ jobs:
 
     - name: Build with Gradle
       run: |
+<<<<<<< Updated upstream
         if ./gradlew clean; then
           ./gradlew assembleDebug --stacktrace --info
         else
           echo "Using gradle command instead..."
           gradle clean
           gradle assembleDebug --stacktrace --info
+=======
+        echo "=== Build Environment ==="
+        java -version
+        echo "=== Gradle Version ==="
+        if ./gradlew --version; then
+          echo "=== Starting Build ==="
+          ./gradlew clean
+          ./gradlew assembleDebug --stacktrace --info --warning-mode all
+        else
+          echo "=== Using Gradle Command ==="
+          gradle clean
+          gradle assembleDebug --stacktrace --info --warning-mode all
+>>>>>>> Stashed changes
         fi
 
     - name: Upload APK Artifact
