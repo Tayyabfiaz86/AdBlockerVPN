@@ -104,7 +104,7 @@ class MainActivity : AppCompatActivity() {
                 
                 // Wait a bit for VPN to actually start
                 lifecycleScope.launch {
-                    delay(1000) // Wait 1 second
+                    delay(2000) // Wait 2 seconds
                     updateUI()
                     
                     if (AdBlockerVpnService.isRunning) {
@@ -143,6 +143,11 @@ class MainActivity : AppCompatActivity() {
             
         } catch (e: Exception) {
             Log.e(TAG, "Error updating UI", e)
+            // Set default values on error
+            binding.toggleButton.text = getString(R.string.start_vpn)
+            binding.statusText.text = getString(R.string.vpn_disconnected)
+            binding.statusText.setTextColor(getColor(R.color.disconnected))
+            binding.adsBlockedText.text = "0"
         }
     }
     

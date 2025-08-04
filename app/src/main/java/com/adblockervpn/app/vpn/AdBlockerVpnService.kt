@@ -79,9 +79,14 @@ class AdBlockerVpnService : VpnService() {
     )
     
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        when (intent?.action) {
-            "START_VPN" -> startVpn()
-            "STOP_VPN" -> stopVpn()
+        try {
+            when (intent?.action) {
+                "START_VPN" -> startVpn()
+                "STOP_VPN" -> stopVpn()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in onStartCommand", e)
+            isRunning = false
         }
         return START_STICKY
     }
@@ -114,7 +119,7 @@ class AdBlockerVpnService : VpnService() {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start VPN", e)
             isRunning = false
-            throw e
+            // Don't throw exception, just log it
         }
     }
     
