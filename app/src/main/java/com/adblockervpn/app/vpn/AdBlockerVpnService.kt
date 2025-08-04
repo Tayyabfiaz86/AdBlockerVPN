@@ -131,9 +131,14 @@ class AdBlockerVpnService : VpnService() {
     
     private fun startTunnel() {
         tunnelJob = CoroutineScope(Dispatchers.IO).launch {
+            var inputStream: FileInputStream? = null
+            var outputStream: FileOutputStream? = null
+            
             try {
-                val inputStream = FileInputStream(vpnInterface?.fileDescriptor)
-                val outputStream = FileOutputStream(vpnInterface?.fileDescriptor)
+                vpnInterface?.let { vpn ->
+                    inputStream = FileInputStream(vpn.fileDescriptor)
+                    outputStream = FileOutputStream(vpn.fileDescriptor)
+                }
                 
                 val buffer = ByteArray(32767)
                 
@@ -141,7 +146,7 @@ class AdBlockerVpnService : VpnService() {
                 
                 while (isRunning) {
                     try {
-                        val length = inputStream.read(buffer)
+                        val length = inputStream?.read(buffer) ?: -1
                         if (length > 0) {
                             // Process packet and check for ads
                             if (isAdDomain(buffer, length)) {
@@ -152,8 +157,8 @@ class AdBlockerVpnService : VpnService() {
                             }
                             
                             // Forward legitimate traffic
-                            outputStream.write(buffer, 0, length)
-                            outputStream.flush()
+                            outputStream?.write(buffer, 0, length)
+                            outputStream?.flush()
                         } else if (length == -1) {
                             // End of stream
                             Log.d(TAG, "End of VPN stream")
