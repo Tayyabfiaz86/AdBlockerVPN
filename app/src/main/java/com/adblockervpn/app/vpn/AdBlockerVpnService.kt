@@ -95,6 +95,8 @@ class AdBlockerVpnService : VpnService() {
         if (isRunning) return
         
         try {
+            Log.d(TAG, "Starting VPN service...")
+            
             // Create VPN interface with proper configuration
             val builder = Builder()
                 .addAddress(VPN_ADDRESS, 32)
@@ -105,9 +107,11 @@ class AdBlockerVpnService : VpnService() {
                 .allowFamily(4) // IPv4
                 .allowFamily(6) // IPv6
             
+            Log.d(TAG, "Establishing VPN interface...")
             vpnInterface = builder.establish()
             
             if (vpnInterface != null) {
+                Log.d(TAG, "VPN interface established successfully")
                 isRunning = true
                 startForeground(NOTIFICATION_ID, createNotification())
                 startTunnel()
@@ -119,7 +123,6 @@ class AdBlockerVpnService : VpnService() {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start VPN", e)
             isRunning = false
-            // Don't throw exception, just log it
         }
     }
     

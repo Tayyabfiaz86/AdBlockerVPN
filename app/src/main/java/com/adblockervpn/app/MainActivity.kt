@@ -102,6 +102,7 @@ class MainActivity : AppCompatActivity() {
         
         if (requestCode == VPN_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
             try {
+                Log.d(TAG, "VPN permission granted, starting service...")
                 val intent = Intent(this, AdBlockerVpnService::class.java).apply {
                     action = "START_VPN"
                 }
@@ -109,13 +110,24 @@ class MainActivity : AppCompatActivity() {
                 
                 // Wait a bit for VPN to actually start
                 lifecycleScope.launch {
-                    delay(3000) // Wait 3 seconds
+                    delay(1000) // Wait 1 second first
                     updateUI()
                     
                     if (AdBlockerVpnService.isRunning) {
+                        Log.d(TAG, "VPN is running")
                         Toast.makeText(this@MainActivity, "VPN started successfully!", Toast.LENGTH_SHORT).show()
                     } else {
-                        Toast.makeText(this@MainActivity, "VPN failed to start. Please try again.", Toast.LENGTH_LONG).show()
+                        Log.d(TAG, "VPN is not running, waiting more...")
+                        delay(2000) // Wait 2 more seconds
+                        updateUI()
+                        
+                        if (AdBlockerVpnService.isRunning) {
+                            Log.d(TAG, "VPN started after delay")
+                            Toast.makeText(this@MainActivity, "VPN started successfully!", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Log.d(TAG, "VPN failed to start")
+                            Toast.makeText(this@MainActivity, "VPN failed to start. Please try again.", Toast.LENGTH_LONG).show()
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -123,12 +135,15 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "VPN failed to start: ${e.message}", Toast.LENGTH_LONG).show()
             }
         } else {
+            Log.d(TAG, "VPN permission denied")
             Toast.makeText(this, "VPN permission denied", Toast.LENGTH_SHORT).show()
         }
     }
     
     private fun updateUI() {
         try {
+            Log.d(TAG, "Updating UI, VPN running: ${AdBlockerVpnService.isRunning}")
+            
             if (AdBlockerVpnService.isRunning) {
                 binding.toggleButton.text = getString(R.string.stop_vpn)
                 binding.statusText.text = getString(R.string.vpn_connected)
