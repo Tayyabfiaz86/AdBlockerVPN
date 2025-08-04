@@ -21,17 +21,28 @@ jobs:
     - name: Setup Gradle
       run: |
         ls -la
-        if [ ! -f "gradlew" ]; then
-          echo "Gradle wrapper not found, regenerating..."
-          gradle wrapper --gradle-version 7.5
-        fi
+        echo "Current directory: $(pwd)"
+        echo "Checking gradlew file..."
+        file gradlew
+        head -5 gradlew
         chmod +x gradlew
-        ./gradlew --version
+        ls -la gradlew
+        if ./gradlew --version; then
+          echo "Gradle wrapper works!"
+        else
+          echo "Gradle wrapper failed, using gradle command..."
+          gradle --version
+        fi
 
     - name: Build with Gradle
       run: |
-        ./gradlew clean
-        ./gradlew assembleDebug --stacktrace --info
+        if ./gradlew clean; then
+          ./gradlew assembleDebug --stacktrace --info
+        else
+          echo "Using gradle command instead..."
+          gradle clean
+          gradle assembleDebug --stacktrace --info
+        fi
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
