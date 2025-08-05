@@ -42,6 +42,26 @@ class AdBlockerVpnService : VpnService() {
         
         var isRunning = false
         var adsBlocked = 0
+        
+        // Add method to get detailed status for debugging
+        fun getStatusInfo(): String {
+            return "VPN Status: isRunning=$isRunning, adsBlocked=$adsBlocked"
+        }
+        
+        // Add method to get detailed error information
+        fun getDetailedStatus(): String {
+            return try {
+                val hasPermission = try {
+                    val intent = VpnService.prepare(null)
+                    intent == null
+                } catch (e: Exception) {
+                    false
+                }
+                "VPN Status: isRunning=$isRunning, adsBlocked=$adsBlocked, hasPermission=$hasPermission"
+            } catch (e: Exception) {
+                "VPN Status: Error getting status - ${e.message}"
+            }
+        }
     }
     
     private var vpnInterface: ParcelFileDescriptor? = null
@@ -80,22 +100,41 @@ class AdBlockerVpnService : VpnService() {
     
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         try {
+            Log.d(TAG, "onStartCommand called with action: ${intent?.action}")
             when (intent?.action) {
                 "START_VPN" -> startVpn()
                 "STOP_VPN" -> stopVpn()
+                else -> Log.w(TAG, "Unknown action: ${intent?.action}")
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error in onStartCommand", e)
             isRunning = false
+            // Try to show error to user
+            try {
+                val errorMsg = "VPN Service Error: ${e.message}"
+                Log.e(TAG, errorMsg, e)
+            } catch (e2: Exception) {
+                Log.e(TAG, "Error showing error message", e2)
+            }
         }
         return START_STICKY
     }
     
     private fun startVpn() {
-        if (isRunning) return
+        if (isRunning) {
+            Log.d(TAG, "VPN already running, ignoring start request")
+            return
+        }
         
         try {
             Log.d(TAG, "Starting VPN service...")
+            
+            // Check if we have the necessary permissions
+            if (!hasVpnPermission()) {
+                val errorMsg = "VPN permission not granted"
+                Log.e(TAG, errorMsg)
+                throw Exception(errorMsg)
+            }
             
             // Create VPN interface with proper configuration
             val builder = Builder()
@@ -107,7 +146,7 @@ class AdBlockerVpnService : VpnService() {
                 .allowFamily(4) // IPv4
                 .allowFamily(6) // IPv6
             
-            Log.d(TAG, "Establishing VPN interface...")
+            Log.d(TAG, "Establishing VPN interface with config: address=$VPN_ADDRESS, dns=$DNS_SERVER, route=$VPN_ROUTE")
             vpnInterface = builder.establish()
             
             if (vpnInterface != null) {
@@ -117,12 +156,16 @@ class AdBlockerVpnService : VpnService() {
                 startTunnel()
                 Log.d(TAG, "VPN started successfully")
             } else {
-                Log.e(TAG, "Failed to establish VPN interface")
+                val errorMsg = "Failed to establish VPN interface - builder.establish() returned null"
+                Log.e(TAG, errorMsg)
                 isRunning = false
+                throw Exception(errorMsg)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to start VPN", e)
+            val errorMsg = "Failed to start VPN: ${e.message}"
+            Log.e(TAG, errorMsg, e)
             isRunning = false
+            throw e
         }
     }
     
@@ -144,11 +187,14 @@ class AdBlockerVpnService : VpnService() {
             
             try {
                 vpnInterface?.let { vpn ->
+                    Log.d(TAG, "Setting up tunnel streams...")
                     inputStream = FileInputStream(vpn.fileDescriptor)
                     outputStream = FileOutputStream(vpn.fileDescriptor)
+                    Log.d(TAG, "Tunnel streams created successfully")
                 } ?: run {
-                    Log.e(TAG, "VPN interface is null")
-                    return@launch
+                    val errorMsg = "VPN interface is null - cannot start tunnel"
+                    Log.e(TAG, errorMsg)
+                    throw Exception(errorMsg)
                 }
                 
                 val buffer = ByteArray(32767)
@@ -180,16 +226,24 @@ class AdBlockerVpnService : VpnService() {
                             Log.e(TAG, "Error reading VPN data", e)
                             delay(100) // Small delay before retry
                         }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Unexpected error in tunnel", e)
+                        if (isRunning) {
+                            delay(100) // Small delay before retry
+                        }
                     }
                 }
                 
                 Log.d(TAG, "Tunnel stopped")
             } catch (e: Exception) {
-                Log.e(TAG, "Error in tunnel", e)
+                val errorMsg = "Error in tunnel: ${e.message}"
+                Log.e(TAG, errorMsg, e)
+                isRunning = false
             } finally {
                 try {
                     inputStream?.close()
                     outputStream?.close()
+                    Log.d(TAG, "Tunnel streams closed")
                 } catch (e: Exception) {
                     Log.e(TAG, "Error closing streams", e)
                 }
@@ -284,5 +338,16 @@ class AdBlockerVpnService : VpnService() {
     override fun onRevoke() {
         super.onRevoke()
         stopVpn()
+    }
+
+    private fun hasVpnPermission(): Boolean {
+        return try {
+            // Try to prepare VPN service to check if we have permission
+            val intent = VpnService.prepare(this)
+            intent == null // If null, we already have permission
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking VPN permission", e)
+            false
+        }
     }
 } 
